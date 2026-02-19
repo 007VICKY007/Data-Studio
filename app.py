@@ -1074,20 +1074,28 @@ def _build_dq_pdf_report(
         # Donut — dimension distribution
         ax_donut = fig.add_axes([0.67, 0.05, 0.30, 0.40])
         ax_donut.set_facecolor(CARD_BG)
-        if dim_scores:
-            wedge_sizes  = list(dim_scores.values())
-            wedge_labels = list(dim_scores.keys())
+        # Build clean donut data — drop NaN/zero values that crash pie()
+        clean_donut = {k: float(v) for k, v in (dim_scores or {}).items()
+                       if v is not None and not (isinstance(v, float) and (np.isnan(v) or np.isinf(v))) and float(v) > 0}
+        if clean_donut:
+            wedge_sizes  = list(clean_donut.values())
+            wedge_labels = list(clean_donut.keys())
             wedge_colors = [PURPLE, MAGENTA, TEAL, AMBER, "#a78bfa", "#34d399"][:len(wedge_sizes)]
-            wedges, texts = ax_donut.pie(
-                wedge_sizes, labels=None, colors=wedge_colors,
-                startangle=90, wedgeprops=dict(width=0.55, edgecolor="white", linewidth=2),
-            )
-            ax_donut.legend(wedge_labels, loc="lower center", fontsize=6.5,
-                            frameon=False, ncol=2, bbox_to_anchor=(0.5, -0.12))
+            try:
+                wedges, texts = ax_donut.pie(
+                    wedge_sizes, labels=None, colors=wedge_colors,
+                    startangle=90, wedgeprops=dict(width=0.55, edgecolor="white", linewidth=2),
+                )
+                ax_donut.legend(wedge_labels, loc="lower center", fontsize=6.5,
+                                frameon=False, ncol=2, bbox_to_anchor=(0.5, -0.12))
+            except Exception:
+                pass
             ax_donut.set_title("Distribution of CDEs by Dimension", fontsize=8,
                                fontweight="bold", color=TEXT2, pad=4)
         else:
-            ax_donut.text(0.5, 0.5, "—", ha="center", fontsize=12, color=TEXT3)
+            ax_donut.text(0.5, 0.5, "No dimension data", ha="center", fontsize=8, color=TEXT3)
+            ax_donut.set_title("Distribution of CDEs by Dimension", fontsize=8,
+                               fontweight="bold", color=TEXT2, pad=4)
 
         # page nav tabs strip
         ax_tabs = fig.add_axes([0, 0, 1, 0.04])
